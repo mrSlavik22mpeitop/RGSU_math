@@ -4,37 +4,93 @@ from matplotlib.patches import Polygon
 import numpy as np
 import math
 
+from scipy.optimize import linprog
+
+
+
+
 
 
 q = int(input("Количество ограничений в системе:"))
 w = int(input("Количество переменных x в задаче:"))
 e = q + w
 
+
+
+obj = [0]*w
+
 c = [0]*e
 b = [0] * q
+lhs_ineq = []
+rhs_ineq = []
+lhs_eq = []
+rhs_eq = []
+
 A = [[0]*e for i in range(q)]
+
 
 print("Введите значения коэффициентов целевой функции:")
 for i in range(w):
-    c[i] = float(input(f"x{i+1}="))
+    top = float(input(f"x{i+1}="))
+    obj[i] = top
+    c[i] = top
+
 u = input("Какой тип решения (min или max):")
-if u == 'min':
+if u == 'max':
     c = list(map(lambda x:-x, c))
+    obj = list(map(lambda x:-x, obj))
+
+
+
 
 print("Введите ограничения:")
 for j in range(q):
+    x_1 = []
     for i in range(w):
-        A[j][i] = float(input(f"x{i + 1}="))
-    b[j] = float(input(f"b{j+1}="))
-    rut = input("Введите y если ограничение <=:")
-    if rut == 'y':
-        A[j][w+j] = 1.0
+        vitek = float(input(f"x{i + 1}="))
+        x_1.append(vitek)
+        A[j][i] = vitek
+    jotaro = float(input(f"b{j+1}="))
+    b[j] = jotaro
+    # loli = list(map(float, input("Введите коэффициенты ограничения:").split()))
+    # f = float(input("Введите значение правой части:"))
+    lol = input("Является ли ограничение уравнением: yes or no:")
+    if lol == "yes":
+        lhs_eq.append(x_1)
+        rhs_eq.append(jotaro)
     else:
-        A[j][w+j] = -1.0
+        rut = input("Введите y если ограничение <=:")
+        if rut == 'y':
+            A[j][w + j] = 1.0
+        else:
+            x_1 = list(map(lambda x: -x, x_1))
+            jotaro *= -1
+            A[j][w + j] = -1.0
+        lhs_ineq.append(x_1)
+        rhs_ineq.append(jotaro)
 
-print(c)
-print(b)
-print(A)
+    # for i in range(w):
+    #     vitek = float(input(f"x{i + 1}="))
+    #     lhs_ineq[j][i] = vitek
+    #     A[j][i] = vitek
+    # jotaro = float(input(f"b{j+1}="))
+    # rhs_ineq[j] = jotaro
+    # b[j] = jotaro
+    # rut = input("Введите y если ограничение <=:")
+    # if rut == 'y':
+    #     A[j][w+j] = 1.0
+    # else :
+    #     lhs_ineq[j] = list(map(lambda x: -x, lhs_ineq[j]))
+    #     rhs_ineq[j] *= -1
+    #     A[j][w+j] = -1.0
+
+
+freedom = int(input("Введите значение свободного члена:"))
+
+# bnd = [(0, float("inf")),  # Границы x
+#        (0, float("inf"))]  # Границы y
+
+
 
 
 def to_tableau(c, A, b):
@@ -60,7 +116,7 @@ def get_pivot_position(tableau):
         restrictions.append(math.inf if el <= 0 else eq[-1] / el)
 
     if (all([r == math.inf for r in restrictions])):
-        raise Exception("Linear program is unbounded.")
+        raise Exception("Функция не ограничена")
 
     row = restrictions.index(min(restrictions))
     return row, column
@@ -109,16 +165,42 @@ def simplex(c, A, b):
 
 
 
-solution = simplex(c, A, b)
-for i, j in enumerate(solution, start=1):
-    print(f"x{i}={j}")
+try:
 
-solution = [solution[i]*c[i] for i in range(len(solution))]
-anime = sum(solution)
-if u == 'min':
-    print(f"Значение целевой функции: {-anime}")
-else:
-    print(f"Значение целевой функции: {anime}")
+
+
+
+    print(obj)
+    print(lhs_ineq)
+    print(rhs_ineq)
+    print(lhs_eq)
+    print(rhs_eq)
+
+
+    opt = linprog(c=obj, A_ub=lhs_ineq or None, b_ub=rhs_ineq or None, A_eq=lhs_eq or None, b_eq=rhs_eq or None,
+                  method="highs")
+    if opt.success:
+
+        print(opt)
+        print(opt.x)
+        if u == 'max':
+           print(f"Значение целевой функции: {(opt.fun)*-1 + freedom}")
+        else:
+           print(f"Значение целевой функции: {(opt.fun) + freedom}")
+
+        solution = simplex(c, A, b)
+
+        solution = [solution[i] * c[i] for i in range(len(solution))]
+        anime = sum(solution)
+    else:
+        print("Функция не ограничена. Оптимальное решение отсутствует.")
+
+
+except Exception as jojo:
+    print(jojo)
+
+
+
 
 
 
